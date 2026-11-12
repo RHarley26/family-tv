@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family TV</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Comic Sans MS", "Chalkboard SE", "Trebuchet MS", sans-serif;
+    background: linear-gradient(160deg, #2b1b6b, #4a2c9a 45%, #1d6fa5);
+    color: #fff; overflow-x: hidden;
+  }
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .star { position: absolute; width: 4px; height: 4px; background: #fff; border-radius: 50%; animation: twinkle 3s infinite ease-in-out; }
+  @keyframes twinkle { 0%,100% { opacity: .2; transform: scale(.8);} 50% { opacity: 1; transform: scale(1.4);} }
+
+  header { position: relative; z-index: 1; text-align: center; padding: 22px 12px 6px; }
+  h1 { margin: 0; font-size: clamp(2.2rem, 8vw, 4rem); letter-spacing: 2px; }
+  h1 span { display: inline-block; animation: bounce 1.6s infinite; text-shadow: 3px 3px 0 rgba(0,0,0,.35); }
+  @keyframes bounce { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-10px);} }
+  .tagline { opacity: .85; margin-top: 4px; font-size: 1.05rem; }
+
+  main { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+  .tile {
+    border: none; padding: 0; cursor: pointer; border-radius: 22px; overflow: hidden;
+    background: var(--c, #ff5e7e); color: #fff; font: inherit; text-align: center;
+    box-shadow: 0 6px 0 rgba(0,0,0,.3); transition: transform .12s;
+    animation: pop .4s backwards;
+  }
+  .tile:active { transform: scale(.94) translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.3); }
+  @keyframes pop { from { transform: scale(.5); opacity: 0; } }
+  .thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: rgba(0,0,0,.2); }
+  .label { padding: 10px 8px 12px; font-size: 1.15rem; font-weight: bold; display: flex; gap: 6px; align-items: center; justify-content: center; }
+  .label .emo { font-size: 1.6rem; }
+
+  .empty { text-align: center; background: rgba(255,255,255,.12); border-radius: 22px; padding: 30px 18px; font-size: 1.15rem; line-height: 1.5; }
+
+  .parentBtn {
+    position: fixed; right: 14px; bottom: 14px; z-index: 5;
+    background: rgba(255,255,255,.18); color: #fff; border: 2px solid rgba(255,255,255,.4);
+    border-radius: 999px; padding: 10px 16px; font: inherit; font-size: .95rem; cursor: pointer;
+  }
+
+  /* Player */
+  .player { position: fixed; inset: 0; background: #000; z-index: 20; display: none; flex-direction: column; }
+  .player.open { display: flex; }
+  .pbar { display: flex; align-items: center; gap: 10px; padding: 10px; background: #111; }
+  .back { background: #ff5e7e; color: #fff; border: none; border-radius: 16px; font: inherit; font-size: 1.3rem; padding: 10px 20px; cursor: pointer; box-shadow: 0 4px 0 #a0304a; }
+  .ptitle { flex: 1; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player iframe { flex: 1; width: 100%; border: 0; }
+  .fallback { text-align: center; padding: 8px; font-size: .85rem; background: #111; }
+  .fallback a { color: #9fd3ff; }
+
+  /* Modals */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 30; display: none; align-items: center; justify-content: center; padding: 14px; }
+  .modal.open { display: flex; }
+  .card { background: #fff; color: #222; border-radius: 20px; padding: 20px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; font-family: system-ui, sans-serif; }
+  .card h2 { margin: 0 0 10px; }
+  .card label { display: block; font-weight: 600; margin: 10px 0 4px; font-size: .95rem; }
+  .card input, .card textarea, .card select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #bbb; font-size: 1rem; font-family: inherit; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .btn { border: none; border-radius: 10px; padding: 10px 14px; font-size: 1rem; cursor: pointer; background: #4a2c9a; color: #fff; }
+  .btn.alt { background: #e6e1f5; color: #2b1b6b; }
+  .btn.del { background: #ffe1e6; color: #a0304a; padding: 6px 10px; }
+  .msg { min-height: 1.2em; font-size: .9rem; margin-top: 6px; }
+  .msg.err { color: #c0213e; } .msg.ok { color: #18794e; }
+  .list { margin-top: 14px; border-top: 1px solid #eee; }
+  .li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eee; }
+  .li img { width: 64px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; }
+  .li .t { flex: 1; font-size: .95rem; }
+  .li .mv { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 4px; }
+  .sum { font-size: 2rem; text-align: center; margin: 10px 0; font-weight: bold; }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sw { width: 34px; height: 34px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+  .sw.sel { border-color: #222; }
+  details { margin-top: 14px; } summary { cursor: pointer; font-weight: 600; }
+  .note { font-size: .85rem; color: #555; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+
+<header>
+  <h1 id="title"></h1>
+  <div class="tagline">Pick a show! 📺</div>
+</header>
+
+<main>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none">
+    <div style="font-size:3rem">🍿</div>
+    No shows yet!<br>Ask a grown-up to tap <b>Grown-ups</b> and add some.
+  </div>
+</main>
+
+<button class="parentBtn" id="parentBtn">🔒 Grown-ups</button>
+
+<!-- Player -->
+<div class="player" id="player">
+  <div class="pbar">
+    <button class="back" id="backBtn">⬅ Back</button>
+    <div class="ptitle" id="ptitle"></div>
+  </div>
+  <iframe id="frame" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+  <div class="fallback">Not playing? <a id="ytLink" href="#" target="_blank" rel="noopener">Open it on YouTube</a></div>
+</div>
+
+<!-- Lock -->
+<div class="modal" id="lock">
+  <div class="card">
+    <h2>Grown-ups only 🔒</h2>
+    <div class="sum" id="sumQ"></div>
+    <input id="sumA" type="number" inputmode="numeric" placeholder="Answer">
+    <div class="msg err" id="lockMsg"></div>
+    <div class="row">
+      <button class="btn" id="lockGo">Unlock</button>
+      <button class="btn alt" data-close="lock">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Parent panel -->
+<div class="modal" id="panel">
+  <div class="card">
+    <h2>Manage shows</h2>
+    <label for="url">YouTube link</label>
+    <input id="url" placeholder="https://www.youtube.com/watch?v=...">
+    <label for="name">Name the kids will see</label>
+    <input id="name" placeholder="e.g. Dinosaur songs">
+    <label for="emo">Emoji (optional)</label>
+    <input id="emo" placeholder="🦖" maxlength="4">
+    <label>Colour</label>
+    <div class="swatches" id="swatches"></div>
+    <div class="msg" id="addMsg"></div>
+    <div class="row">
+      <button class="btn" id="addBtn">➕ Add show</button>
+      <button class="btn alt" data-close="panel">Done</button>
+    </div>
+
+    <details id="bulkBox">
+      <summary>➕ Add lots at once</summary>
+      <p class="note">One link per line. To name a show, put the name first and a <b>|</b> before the link, e.g.<br><code>Dinosaur songs | https://youtu.be/abc123xyz45</code><br>Lines with no name try to fetch the video's own title.</p>
+      <textarea id="bulk" rows="6" placeholder="https://www.youtube.com/watch?v=...&#10;Bedtime story | https://youtu.be/..."></textarea>
+      <div class="row"><button class="btn" id="bulkBtn">Add all</button></div>
+      <div class="msg" id="bulkMsg"></div>
+    </details>
+
+    <h3 style="margin:16px 0 0">Your shows <span id="count" class="note"></span></h3>
+    <div class="list" id="list"></div>
+
+    <details>
+      <summary>Back up / move to another device</summary>
+      <p class="note">Shows are saved in this browser only. Copy this text to keep a backup, or paste a backup in and press Load.</p>
+      <textarea id="backup" rows="4"></textarea>
+      <div class="row">
+        <button class="btn alt" id="copyBtn">Copy</button>
+        <button class="btn alt" id="loadBtn">Load</button>
+      </div>
+      <div class="msg" id="bkMsg"></div>
+    </details>
+
+    <details>
+      <summary>Ads</summary>
+      <p class="note">This page doesn't block ads by itself. Open it in <b>Brave</b>, or in <b>Firefox</b> with <b>uBlock Origin</b>, for ad-free playback. Videos use YouTube's privacy-enhanced player, with related videos limited to the same channel.</p>
+    </details>
+  </div>
+</div>
+
+<script>
+(() => {
+  const COLOURS = ['#ff5e7e','#ff9f1c','#ffd23f','#3bceac','#0ead69','#3a86ff','#8338ec','#ff4fd8'];
+  const KEY = 'familyTV.shows.v1';
+  const $ = id => document.getElementById(id);
+
+  // Animated title + stars
+  const word = 'Family TV';
+  $('title').innerHTML = [...word].map((ch, i) =>
+    ch === ' ' ? '&nbsp;' : `<span style="animation-delay:${i*0.1}s;color:${COLOURS[i%COLOURS.length]}">${ch}</span>`).join('');
+  for (let i = 0; i < 40; i++) {
+    const s = document.createElement('div'); s.className = 'star';
+    s.style.left = Math.random()*100 + '%'; s.style.top = Math.random()*100 + '%';
+    s.style.animationDelay = (Math.random()*3) + 's';
+    $('stars').appendChild(s);
+  }
+
+  // Storage (safe)
+  let shows = [];
+  function load() { try { shows = JSON.parse(localStorage.getItem(KEY)) || []; } catch { shows = []; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(shows)); } catch {} }
+
+  function parseId(input) {
+    const s = (input || '').trim();
+    if (/^[\w-]{11}$/.test(s)) return s;
+    try {
+      const u = new URL(s);
+      if (u.hostname.includes('youtu.be')) return u.pathname.slice(1, 12);
+      if (u.searchParams.get('v')) return u.searchParams.get('v').slice(0, 11);
+      const m = u.pathname.match(/\/(embed|shorts|live|v)\/([\w-]{11})/);
+      if (m) return m[2];
+    } catch {}
+    return null;
+  }
+  const thumb = id => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // Kids grid
+  function render() {
+    const g = $('grid'); g.innerHTML = '';
+    $('empty').style.display = shows.length ? 'none' : 'block';
+    shows.forEach((sh, i) => {
+      const b = document.createElement('button');
+      b.className = 'tile'; b.style.setProperty('--c', sh.colour);
+      b.style.animationDelay = (i*0.05) + 's';
+      b.innerHTML = `<img class="thumb" src="${thumb(sh.id)}" alt="" loading="lazy">
+        <div class="label">${sh.emo ? `<span class="emo">${esc(sh.emo)}</span>` : ''}<span>${esc(sh.name)}</span></div>`;
+      b.onclick = () => play(sh);
+      g.appendChild(b);
+    });
+  }
+
+  // Player
+  function play(sh) {
+    const p = new URLSearchParams({ autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1, fs: 1 });
+    if (location.protocol.startsWith('http')) p.set('origin', location.origin);
+    $('frame').src = `https://www.youtube-nocookie.com/embed/${sh.id}?${p}`;
+    $('ytLink').href = `https://www.youtube.com/watch?v=${sh.id}`;
+    $('ptitle').textContent = (sh.emo ? sh.emo + ' ' : '') + sh.name;
+    $('player').classList.add('open');
+  }
+  $('backBtn').onclick = () => { $('frame').src = 'about:blank'; $('player').classList.remove('open'); };
+
+  // Modals
+  const open = id => $(id).classList.add('open');
+  const close = id => $(id).classList.remove('open');
+  document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => close(b.dataset.close));
+
+  // Grown-up lock: a times-table sum
+  let answer = 0;
+  $('parentBtn').onclick = () => {
+    const a = 6 + Math.floor(Math.random()*7), b = 6 + Math.floor(Math.random()*7);
+    answer = a * b; $('sumQ').textContent = `${a} × ${b} = ?`;
+    $('sumA').value = ''; $('lockMsg').textContent = '';
+    open('lock'); setTimeout(() => $('sumA').focus(), 50);
+  };
+  const tryUnlock = () => {
+    if (Number($('sumA').value) === answer) { close('lock'); openPanel(); }
+    else $('lockMsg').textContent = 'Not quite — try again.';
+  };
+  $('lockGo').onclick = tryUnlock;
+  $('sumA').onkeydown = e => { if (e.key === 'Enter') tryUnlock(); };
+
+  // Parent panel
+  let colour = COLOURS[0];
+  function drawSwatches() {
+    $('swatches').innerHTML = '';
+    COLOURS.forEach(c => {
+      const d = document.createElement('div');
+      d.className = 'sw' + (c === colour ? ' sel' : ''); d.style.background = c;
+      d.onclick = () => { colour = c; drawSwatches(); };
+      $('swatches').appendChild(d);
+    });
+  }
+  let editing = -1;
+  function drawList() {
+    const l = $('list'); l.innerHTML = '';
+    $('count').textContent = shows.length ? `(${shows.length})` : '';
+    shows.forEach((sh, i) => {
+      const r = document.createElement('div');
+      if (i === editing) { r.appendChild(editor(sh, i)); l.appendChild(r); return; }
+      r.className = 'li';
+      r.innerHTML = `<img src="${thumb(sh.id)}" alt=""><div class="t">${esc(sh.emo||'')} ${esc(sh.name)}</div>
+        <button class="mv" title="Move up">⬆️</button><button class="mv" title="Move down">⬇️</button>
+        <button class="mv" title="Edit">✏️</button><button class="btn del">Remove</button>`;
+      const [up, down, ed, del] = r.querySelectorAll('button');
+      up.onclick = () => { if (i > 0) { [shows[i-1], shows[i]] = [shows[i], shows[i-1]]; commit(); } };
+      down.onclick = () => { if (i < shows.length-1) { [shows[i+1], shows[i]] = [shows[i], shows[i+1]]; commit(); } };
+      ed.onclick = () => { editing = i; drawList(); };
+      del.onclick = () => {
+        if (del.dataset.sure) { shows.splice(i, 1); editing = -1; commit(); }
+        else { del.dataset.sure = 1; del.textContent = 'Sure?'; setTimeout(() => { delete del.dataset.sure; del.textContent = 'Remove'; }, 3000); }
+      };
+      l.appendChild(r);
+    });
+    if (shows.length > 1) {
+      const all = document.createElement('button');
+      all.className = 'btn del'; all.style.marginTop = '10px'; all.textContent = '🗑 Remove all';
+      all.onclick = () => {
+        if (all.dataset.sure) { shows = []; editing = -1; commit(); }
+        else { all.dataset.sure = 1; all.textContent = 'Tap again to remove ALL shows'; setTimeout(() => { delete all.dataset.sure; all.textContent = '🗑 Remove all'; }, 3000); }
+      };
+      l.appendChild(all);
+    }
+    $('backup').value = JSON.stringify(shows);
+  }
+
+  function editor(sh, i) {
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#f4f1fc;border-radius:12px;padding:10px;margin:8px 0';
+    let c = sh.colour;
+    box.innerHTML = `<label>YouTube link</label><input class="eu" value="https://www.youtube.com/watch?v=${esc(sh.id)}">
+      <label>Name</label><input class="en" value="${esc(sh.name)}">
+      <label>Emoji</label><input class="ee" maxlength="4" value="${esc(sh.emo||'')}">
+      <label>Colour</label><div class="swatches"></div>
+      <div class="msg err"></div>
+      <div class="row"><button class="btn">💾 Save</button><button class="btn alt">Cancel</button></div>`;
+    const sw = box.querySelector('.swatches');
+    const drawSw = () => { sw.innerHTML = ''; COLOURS.forEach(col => {
+      const d = document.createElement('div'); d.className = 'sw' + (col === c ? ' sel' : ''); d.style.background = col;
+      d.onclick = () => { c = col; drawSw(); }; sw.appendChild(d); }); };
+    drawSw();
+    const [save, cancel] = box.querySelectorAll('.row button');
+    save.onclick = () => {
+      const id = parseId(box.querySelector('.eu').value);
+      if (!id) { box.querySelector('.msg').textContent = "That doesn't look like a YouTube video link."; return; }
+      shows[i] = { id, name: box.querySelector('.en').value.trim() || 'Show', emo: box.querySelector('.ee').value.trim(), colour: c };
+      editing = -1; commit();
+    };
+    cancel.onclick = () => { editing = -1; drawList(); };
+    return box;
+  }
+
+  async function fetchTitle(id) {
+    try {
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 5000);
+      const r = await fetch(`https://noembed.com/embed?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + id)}`, { signal: ctl.signal });
+      clearTimeout(t);
+      const j = await r.json();
+      return j.title ? j.title.slice(0, 40) : null;
+    } catch { return null; }
+  }
+
+  $('bulkBtn').onclick = async () => {
+    const msg = $('bulkMsg'), btn = $('bulkBtn');
+    const lines = $('bulk').value.split('\n').map(s => s.trim()).filter(Boolean);
+    if (!lines.length) { msg.className = 'msg err'; msg.textContent = 'Paste some links first.'; return; }
+    btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Adding…';
+    let added = 0, bad = [], dup = 0;
+    for (const line of lines) {
+      const parts = line.split('|');
+      const link = parts.pop().trim(), given = parts.join('|').trim();
+      const id = parseId(link);
+      if (!id) { bad.push(line); continue; }
+      if (shows.some(s => s.id === id)) { dup++; continue; }
+      const name = given || await fetchTitle(id) || `Show ${shows.length + 1}`;
+      shows.push({ id, name, emo: '', colour: COLOURS[shows.length % COLOURS.length] });
+      added++; commit();
+    }
+    btn.disabled = false;
+    $('bulk').value = bad.join('\n');
+    msg.className = bad.length ? 'msg err' : 'msg ok';
+    msg.textContent = `Added ${added}.` + (dup ? ` Skipped ${dup} already on the list.` : '') +
+      (bad.length ? ` ${bad.length} line(s) weren't YouTube links — left in the box.` : '');
+  };
+  function commit() { save(); render(); drawList(); }
+  function openPanel() { editing = -1; drawSwatches(); drawList(); $('addMsg').textContent = ''; open('panel'); }
+
+  $('addBtn').onclick = () => {
+    const id = parseId($('url').value), msg = $('addMsg');
+    if (!id) { msg.className = 'msg err'; msg.textContent = "That doesn't look like a YouTube video link."; return; }
+    const name = $('name').value.trim() || 'New show';
+    shows.push({ id, name, emo: $('emo').value.trim(), colour });
+    colour = COLOURS[shows.length % COLOURS.length];
+    $('url').value = $('name').value = $('emo').value = '';
+    msg.className = 'msg ok'; msg.textContent = `Added “${name}”!`;
+    drawSwatches(); commit();
+  };
+
+  $('copyBtn').onclick = async () => {
+    try { await navigator.clipboard.writeText($('backup').value); $('bkMsg').className='msg ok'; $('bkMsg').textContent='Copied!'; }
+    catch { $('backup').select(); $('bkMsg').className='msg'; $('bkMsg').textContent='Selected — copy it manually.'; }
+  };
+  $('loadBtn').onclick = () => {
+    try {
+      const data = JSON.parse($('backup').value);
+      if (!Array.isArray(data)) throw 0;
+      shows = data.filter(s => s && /^[\w-]{11}$/.test(s.id)).map(s => ({
+        id: s.id, name: String(s.name || 'Show'), emo: String(s.emo || ''), colour: COLOURS.includes(s.colour) ? s.colour : COLOURS[0]
+      }));
+      commit(); $('bkMsg').className='msg ok'; $('bkMsg').textContent=`Loaded ${shows.length} shows.`;
+    } catch { $('bkMsg').className='msg err'; $('bkMsg').textContent="Couldn't read that backup."; }
+  };
+
+  load(); render();
+})();
+</script>
+</body>
+</html>
