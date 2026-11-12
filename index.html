@@ -10,6 +10,7 @@
     margin: 0; min-height: 100vh;
     font-family: "Comic Sans MS", "Chalkboard SE", "Trebuchet MS", sans-serif;
     background: linear-gradient(160deg, #2b1b6b, #4a2c9a 45%, #1d6fa5);
+    background-attachment: fixed;
     color: #fff; overflow-x: hidden;
   }
   .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
@@ -22,10 +23,10 @@
   @keyframes bounce { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-10px);} }
   .tagline { opacity: .85; margin-top: 4px; font-size: 1.05rem; }
 
-  main { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 14px; }
+  main { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 14px 14px 80px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
   .tile {
-    border: none; padding: 0; cursor: pointer; border-radius: 22px; overflow: hidden;
+    border: none; padding: 0; cursor: pointer; border-radius: 22px; overflow: hidden; position: relative;
     background: var(--c, #ff5e7e); color: #fff; font: inherit; text-align: center;
     box-shadow: 0 6px 0 rgba(0,0,0,.3); transition: transform .12s;
     animation: pop .4s backwards;
@@ -33,8 +34,13 @@
   .tile:active { transform: scale(.94) translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.3); }
   @keyframes pop { from { transform: scale(.5); opacity: 0; } }
   .thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: rgba(0,0,0,.2); }
+  .thumbBox { width: 100%; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.18); }
+  .thumbBox img { height: 80%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 4px solid rgba(255,255,255,.8); }
+  .thumbBox .bigEmo { font-size: 3.4rem; }
+  .badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.55); border-radius: 999px; padding: 3px 10px; font-size: .8rem; }
   .label { padding: 10px 8px 12px; font-size: 1.15rem; font-weight: bold; display: flex; gap: 6px; align-items: center; justify-content: center; }
   .label .emo { font-size: 1.6rem; }
+  .vlabel { padding: 8px; font-size: .95rem; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 3.1em; }
 
   .empty { text-align: center; background: rgba(255,255,255,.12); border-radius: 22px; padding: 30px 18px; font-size: 1.15rem; line-height: 1.5; }
 
@@ -44,15 +50,30 @@
     border-radius: 999px; padding: 10px 16px; font: inherit; font-size: .95rem; cursor: pointer;
   }
 
+  /* Channel folder view */
+  .folder { position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column; overflow-y: auto;
+    background: linear-gradient(160deg, #2b1b6b, #4a2c9a 45%, #1d6fa5); }
+  .folder.open { display: flex; }
+  .fbar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(20,10,60,.85); backdrop-filter: blur(6px); }
+  .fbar img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+  .ftitle { flex: 1; font-size: 1.4rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fgrid { padding: 14px; max-width: 1100px; width: 100%; margin: 0 auto; }
+  .fnote { text-align: center; opacity: .8; padding: 6px; font-size: .9rem; }
+
   /* Player */
   .player { position: fixed; inset: 0; background: #000; z-index: 20; display: none; flex-direction: column; }
   .player.open { display: flex; }
   .pbar { display: flex; align-items: center; gap: 10px; padding: 10px; background: #111; }
   .back { background: #ff5e7e; color: #fff; border: none; border-radius: 16px; font: inherit; font-size: 1.3rem; padding: 10px 20px; cursor: pointer; box-shadow: 0 4px 0 #a0304a; }
   .ptitle { flex: 1; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .player iframe { flex: 1; width: 100%; border: 0; }
-  .fallback { text-align: center; padding: 8px; font-size: .85rem; background: #111; }
-  .fallback a { color: #9fd3ff; }
+  .stage { flex: 1; position: relative; }
+  .stage iframe, #frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .unavail { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; background: linear-gradient(160deg, #2b1b6b, #4a2c9a); padding: 20px; }
+  .unavail.show { display: flex; }
+  .unavail .big { font-size: 5rem; animation: bounce 1.6s infinite; }
+  .unavail h2 { margin: 0; font-size: clamp(1.6rem, 6vw, 2.6rem); }
+  .unavail p { margin: 0; opacity: .85; font-size: 1.1rem; }
 
   /* Modals */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 30; display: none; align-items: center; justify-content: center; padding: 14px; }
@@ -60,24 +81,30 @@
   .card { background: #fff; color: #222; border-radius: 20px; padding: 20px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; font-family: system-ui, sans-serif; }
   .card h2 { margin: 0 0 10px; }
   .card label { display: block; font-weight: 600; margin: 10px 0 4px; font-size: .95rem; }
-  .card input, .card textarea, .card select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #bbb; font-size: 1rem; font-family: inherit; }
+  .card input, .card textarea { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #bbb; font-size: 1rem; font-family: inherit; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .btn { border: none; border-radius: 10px; padding: 10px 14px; font-size: 1rem; cursor: pointer; background: #4a2c9a; color: #fff; }
+  .btn:disabled { opacity: .5; }
   .btn.alt { background: #e6e1f5; color: #2b1b6b; }
   .btn.del { background: #ffe1e6; color: #a0304a; padding: 6px 10px; }
   .msg { min-height: 1.2em; font-size: .9rem; margin-top: 6px; }
   .msg.err { color: #c0213e; } .msg.ok { color: #18794e; }
-  .list { margin-top: 14px; border-top: 1px solid #eee; }
+  .list { margin-top: 10px; border-top: 1px solid #eee; }
   .li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eee; }
-  .li img { width: 64px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; }
-  .li .t { flex: 1; font-size: .95rem; }
+  .li img, .li .ph { width: 64px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; flex: none; }
+  .li .ph { background: #e6e1f5; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+  .li img.round { width: 36px; aspect-ratio: 1; border-radius: 50%; margin: 0 14px; }
+  .li .t { flex: 1; font-size: .95rem; min-width: 0; }
+  .li .sub { display: block; font-size: .78rem; color: #777; }
   .li .mv { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 4px; }
   .sum { font-size: 2rem; text-align: center; margin: 10px 0; font-weight: bold; }
   .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
   .sw { width: 34px; height: 34px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
   .sw.sel { border-color: #222; }
   details { margin-top: 14px; } summary { cursor: pointer; font-weight: 600; }
-  .note { font-size: .85rem; color: #555; line-height: 1.4; }
+  .note { font-size: .85rem; color: #555; line-height: 1.45; }
+  .note ol { padding-left: 20px; margin: 6px 0; }
+  code { background: #f1eefa; padding: 1px 4px; border-radius: 4px; word-break: break-all; }
 </style>
 </head>
 <body>
@@ -98,14 +125,32 @@
 
 <button class="parentBtn" id="parentBtn">🔒 Grown-ups</button>
 
+<!-- Channel folder -->
+<div class="folder" id="folder">
+  <div class="fbar">
+    <button class="back" id="fBack">⬅ Back</button>
+    <img id="fImg" alt="" style="display:none">
+    <div class="ftitle" id="fTitle"></div>
+  </div>
+  <div class="fnote" id="fNote"></div>
+  <div class="fgrid"><div class="grid" id="fGrid"></div></div>
+</div>
+
 <!-- Player -->
 <div class="player" id="player">
   <div class="pbar">
     <button class="back" id="backBtn">⬅ Back</button>
     <div class="ptitle" id="ptitle"></div>
   </div>
-  <iframe id="frame" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
-  <div class="fallback">Not playing? <a id="ytLink" href="#" target="_blank" rel="noopener">Open it on YouTube</a></div>
+  <div class="stage">
+    <div id="frame"></div>
+    <div class="unavail" id="unavail">
+      <div class="big">😢</div>
+      <h2>Video unavailable</h2>
+      <p>This one won't play. Let's pick another!</p>
+      <button class="back" id="pickBtn">📺 Pick another show</button>
+    </div>
+  </div>
 </div>
 
 <!-- Lock -->
@@ -126,24 +171,24 @@
 <div class="modal" id="panel">
   <div class="card">
     <h2>Manage shows</h2>
-    <label for="url">YouTube link</label>
-    <input id="url" placeholder="https://www.youtube.com/watch?v=...">
-    <label for="name">Name the kids will see</label>
-    <input id="name" placeholder="e.g. Dinosaur songs">
+    <label for="url">YouTube link — a video, a channel or a playlist</label>
+    <input id="url" placeholder="https://www.youtube.com/@channel or a video link">
+    <label for="name">Name the kids will see (optional)</label>
+    <input id="name" placeholder="Leave blank to use YouTube's name">
     <label for="emo">Emoji (optional)</label>
     <input id="emo" placeholder="🦖" maxlength="4">
     <label>Colour</label>
     <div class="swatches" id="swatches"></div>
     <div class="msg" id="addMsg"></div>
     <div class="row">
-      <button class="btn" id="addBtn">➕ Add show</button>
+      <button class="btn" id="addBtn">➕ Add</button>
       <button class="btn alt" data-close="panel">Done</button>
     </div>
 
     <details id="bulkBox">
       <summary>➕ Add lots at once</summary>
-      <p class="note">One link per line. To name a show, put the name first and a <b>|</b> before the link, e.g.<br><code>Dinosaur songs | https://youtu.be/abc123xyz45</code><br>Lines with no name try to fetch the video's own title.</p>
-      <textarea id="bulk" rows="6" placeholder="https://www.youtube.com/watch?v=...&#10;Bedtime story | https://youtu.be/..."></textarea>
+      <p class="note">One link per line — videos, channels and playlists can be mixed. To choose a name, put it first with a <b>|</b> before the link, e.g.<br><code>Dinosaur songs | https://youtu.be/abc123xyz45</code></p>
+      <textarea id="bulk" rows="6" placeholder="https://www.youtube.com/@somechannel&#10;Bedtime story | https://youtu.be/..."></textarea>
       <div class="row"><button class="btn" id="bulkBtn">Add all</button></div>
       <div class="msg" id="bulkMsg"></div>
     </details>
@@ -151,9 +196,32 @@
     <h3 style="margin:16px 0 0">Your shows <span id="count" class="note"></span></h3>
     <div class="list" id="list"></div>
 
+    <details id="keyBox">
+      <summary>🔑 YouTube API key (for channels)</summary>
+      <div class="note">
+        A free key lets Family TV read a channel's name, picture and video list, and check for new videos.
+        Without one, only <code>/channel/UC…</code> and playlist links work, and they just play straight through.
+        <ol>
+          <li>Go to <b>console.cloud.google.com</b> and sign in with a Google account.</li>
+          <li>Create a project (any name, e.g. <i>Family TV</i>).</li>
+          <li>Search for <b>YouTube Data API v3</b> and tap <b>Enable</b>.</li>
+          <li>Go to <b>APIs &amp; Services → Credentials → Create credentials → API key</b>.</li>
+          <li>Recommended: edit the key, choose <b>Websites</b> restriction and add <code>https://YOURNAME.github.io/*</code>.</li>
+          <li>Copy the key and paste it below.</li>
+        </ol>
+        The key is saved in this browser only — it isn't in the page's code, so it stays off GitHub.
+      </div>
+      <input id="apiKey" placeholder="Paste your API key">
+      <div class="row">
+        <button class="btn" id="keySave">Save &amp; test</button>
+        <button class="btn alt" id="keyClear">Remove key</button>
+      </div>
+      <div class="msg" id="keyMsg"></div>
+    </details>
+
     <details>
       <summary>Back up / move to another device</summary>
-      <p class="note">Shows are saved in this browser only. Copy this text to keep a backup, or paste a backup in and press Load.</p>
+      <p class="note">Shows are saved in this browser only. Copy this text to keep a backup, or paste a backup in and press Load. (The API key isn't included.)</p>
       <textarea id="backup" rows="4"></textarea>
       <div class="row">
         <button class="btn alt" id="copyBtn">Copy</button>
@@ -172,12 +240,14 @@
 <script>
 (() => {
   const COLOURS = ['#ff5e7e','#ff9f1c','#ffd23f','#3bceac','#0ead69','#3a86ff','#8338ec','#ff4fd8'];
-  const KEY = 'familyTV.shows.v1';
+  const KEY = 'familyTV.shows.v1', APIKEY = 'familyTV.apikey.v1';
+  const MAX_VIDEOS = 200, REFRESH_MS = 6 * 60 * 60 * 1000;
   const $ = id => document.getElementById(id);
+  const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const thumb = id => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 
-  // Animated title + stars
-  const word = 'Family TV';
-  $('title').innerHTML = [...word].map((ch, i) =>
+  // ---------- Title + stars ----------
+  $('title').innerHTML = [...'Family TV'].map((ch, i) =>
     ch === ' ' ? '&nbsp;' : `<span style="animation-delay:${i*0.1}s;color:${COLOURS[i%COLOURS.length]}">${ch}</span>`).join('');
   for (let i = 0; i < 40; i++) {
     const s = document.createElement('div'); s.className = 'star';
@@ -186,58 +256,250 @@
     $('stars').appendChild(s);
   }
 
-  // Storage (safe)
+  // ---------- Storage ----------
   let shows = [];
-  function load() { try { shows = JSON.parse(localStorage.getItem(KEY)) || []; } catch { shows = []; } }
+  const getKey = () => { try { return localStorage.getItem(APIKEY) || ''; } catch { return ''; } };
+  const setKey = k => { try { k ? localStorage.setItem(APIKEY, k) : localStorage.removeItem(APIKEY); } catch {} };
+  function clean(s) {
+    if (!s || typeof s !== 'object') return null;
+    const colour = COLOURS.includes(s.colour) ? s.colour : COLOURS[0];
+    const base = { name: String(s.name || 'Show').slice(0, 80), emo: String(s.emo || '').slice(0, 4), colour };
+    if (s.type === 'list') {
+      if (!/^(UU|PL|OL|FL|LL|RD)[\w-]{8,}$/.test(s.listId || '') && !/^[\w-]{10,}$/.test(s.listId || '')) return null;
+      return { ...base, type: 'list', kind: s.kind === 'playlist' ? 'playlist' : 'channel', listId: s.listId,
+        img: typeof s.img === 'string' && s.img.startsWith('https://') ? s.img : '',
+        videos: Array.isArray(s.videos) ? s.videos.filter(v => v && /^[\w-]{11}$/.test(v.id)).slice(0, MAX_VIDEOS).map(v => ({ id: v.id, t: String(v.t || '').slice(0, 120) })) : [],
+        updated: Number(s.updated) || 0 };
+    }
+    if (!/^[\w-]{11}$/.test(s.id || '')) return null;
+    return { ...base, type: 'video', id: s.id };
+  }
+  function load() { try { shows = (JSON.parse(localStorage.getItem(KEY)) || []).map(clean).filter(Boolean); } catch { shows = []; } }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(shows)); } catch {} }
+  const itemKey = s => s.type === 'list' ? s.listId : s.id;
 
-  function parseId(input) {
+  // ---------- Link parsing ----------
+  function parseInput(input) {
     const s = (input || '').trim();
-    if (/^[\w-]{11}$/.test(s)) return s;
-    try {
-      const u = new URL(s);
-      if (u.hostname.includes('youtu.be')) return u.pathname.slice(1, 12);
-      if (u.searchParams.get('v')) return u.searchParams.get('v').slice(0, 11);
-      const m = u.pathname.match(/\/(embed|shorts|live|v)\/([\w-]{11})/);
-      if (m) return m[2];
-    } catch {}
+    if (!s) return null;
+    if (/^@[\w.-]{3,}$/.test(s)) return { kind: 'channel', by: 'handle', value: s.slice(1) };
+    if (/^UC[\w-]{22}$/.test(s)) return { kind: 'channel', by: 'id', value: s };
+    if (/^[\w-]{11}$/.test(s)) return { kind: 'video', id: s };
+    let u; try { u = new URL(/^https?:\/\//i.test(s) ? s : 'https://' + s); } catch { return null; }
+    if (!/(^|\.)youtube\.com$|(^|\.)youtube-nocookie\.com$|^youtu\.be$/.test(u.hostname)) return null;
+    const path = decodeURIComponent(u.pathname);
+    if (u.hostname === 'youtu.be') { const id = path.slice(1, 12); return /^[\w-]{11}$/.test(id) ? { kind: 'video', id } : null; }
+    const list = u.searchParams.get('list');
+    if (path.startsWith('/playlist') && list) return { kind: 'playlist', id: list };
+    const v = u.searchParams.get('v');
+    if (v && /^[\w-]{11}/.test(v)) return { kind: 'video', id: v.slice(0, 11) };
+    let m;
+    if ((m = path.match(/^\/(embed|shorts|live|v)\/([\w-]{11})/))) return { kind: 'video', id: m[2] };
+    if ((m = path.match(/^\/channel\/(UC[\w-]{22})/))) return { kind: 'channel', by: 'id', value: m[1] };
+    if ((m = path.match(/^\/@([^/]+)/))) return { kind: 'channel', by: 'handle', value: m[1] };
+    if ((m = path.match(/^\/user\/([^/]+)/))) return { kind: 'channel', by: 'user', value: m[1] };
+    if ((m = path.match(/^\/c\/([^/]+)/))) return { kind: 'channel', by: 'custom', value: m[1] };
+    if (list) return { kind: 'playlist', id: list };
     return null;
   }
-  const thumb = id => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-  const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  // Kids grid
+  // ---------- YouTube Data API ----------
+  async function api(path, params) {
+    const key = getKey();
+    if (!key) throw new Error('NO_KEY');
+    const q = new URLSearchParams({ ...params, key });
+    let r;
+    try { r = await fetch(`https://www.googleapis.com/youtube/v3/${path}?${q}`); }
+    catch { throw new Error("Couldn't reach YouTube — check the internet connection."); }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const reason = j.error?.errors?.[0]?.reason || '';
+      if (/keyInvalid|badRequest/.test(reason) || /API key not valid/i.test(j.error?.message || '')) throw new Error('The API key was rejected — check it in the 🔑 section.');
+      if (/quota/i.test(reason)) throw new Error("YouTube's daily limit for this key is used up — try again tomorrow.");
+      if (/referer|forbidden|accessNotConfigured/i.test(reason + (j.error?.message || ''))) throw new Error('The key is blocked for this site or the YouTube API isn\'t enabled — check the key settings.');
+      throw new Error(j.error?.message || 'YouTube returned an error.');
+    }
+    return j;
+  }
+  async function resolveChannel(c) {
+    let params;
+    if (c.by === 'id') params = { id: c.value };
+    else if (c.by === 'handle') params = { forHandle: '@' + c.value };
+    else if (c.by === 'user') params = { forUsername: c.value };
+    else {
+      const s = await api('search', { part: 'snippet', q: c.value, type: 'channel', maxResults: 1 });
+      const id = s.items?.[0]?.snippet?.channelId;
+      if (!id) throw new Error("Couldn't find that channel.");
+      params = { id };
+    }
+    const j = await api('channels', { part: 'snippet,contentDetails', ...params });
+    const ch = j.items?.[0];
+    if (!ch) throw new Error("Couldn't find that channel.");
+    return {
+      name: ch.snippet.title,
+      img: ch.snippet.thumbnails?.medium?.url || ch.snippet.thumbnails?.default?.url || '',
+      listId: ch.contentDetails.relatedPlaylists.uploads
+    };
+  }
+  async function fetchVideos(listId) {
+    const out = []; let pageToken = '';
+    do {
+      const j = await api('playlistItems', { part: 'snippet', playlistId: listId, maxResults: 50, ...(pageToken && { pageToken }) });
+      for (const it of j.items || []) {
+        const id = it.snippet?.resourceId?.videoId, t = it.snippet?.title || '';
+        if (id && t !== 'Private video' && t !== 'Deleted video') out.push({ id, t });
+      }
+      pageToken = j.nextPageToken || '';
+    } while (pageToken && out.length < MAX_VIDEOS);
+    return out.slice(0, MAX_VIDEOS);
+  }
+  async function fetchTitle(id) {
+    try {
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 5000);
+      const r = await fetch(`https://noembed.com/embed?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + id)}`, { signal: ctl.signal });
+      clearTimeout(t);
+      const j = await r.json();
+      return j.title ? j.title.slice(0, 40) : null;
+    } catch { return null; }
+  }
+
+  // Turn a pasted link into a show
+  async function buildItem(text, givenName, emo, colour) {
+    const p = parseInput(text);
+    if (!p) throw new Error("That doesn't look like a YouTube link.");
+    const hasKey = !!getKey();
+    if (p.kind === 'video') {
+      const name = givenName || await fetchTitle(p.id) || `Show ${shows.length + 1}`;
+      return { type: 'video', id: p.id, name, emo, colour };
+    }
+    if (p.kind === 'playlist') {
+      if (!hasKey) return { type: 'list', kind: 'playlist', listId: p.id, name: givenName || 'Playlist', emo, colour, img: '', videos: [], updated: 0 };
+      const meta = await api('playlists', { part: 'snippet', id: p.id });
+      const pl = meta.items?.[0];
+      if (!pl) throw new Error("Couldn't find that playlist (it may be private).");
+      const videos = await fetchVideos(p.id);
+      return { type: 'list', kind: 'playlist', listId: p.id, name: givenName || pl.snippet.title, emo, colour,
+        img: '', videos, updated: Date.now() };
+    }
+    // channel
+    if (!hasKey) {
+      if (p.by !== 'id') throw new Error('To add a channel from an @name link, add a free API key in the 🔑 section below — or use the channel\'s /channel/UC… link.');
+      return { type: 'list', kind: 'channel', listId: 'UU' + p.value.slice(2), name: givenName || 'Channel', emo, colour, img: '', videos: [], updated: 0 };
+    }
+    const ch = await resolveChannel(p);
+    const videos = await fetchVideos(ch.listId);
+    if (!videos.length) throw new Error(`“${ch.name}” has no public videos.`);
+    return { type: 'list', kind: 'channel', listId: ch.listId, name: givenName || ch.name, emo, colour, img: ch.img, videos, updated: Date.now() };
+  }
+
+  async function refreshList(sh) {
+    sh.videos = await fetchVideos(sh.listId);
+    sh.updated = Date.now();
+    save();
+  }
+
+  // ---------- Kids' grid ----------
+  function tileFor(sh, i) {
+    const b = document.createElement('button');
+    b.className = 'tile'; b.style.setProperty('--c', sh.colour);
+    b.style.animationDelay = (i*0.04) + 's';
+    const label = `<div class="label">${sh.emo ? `<span class="emo">${esc(sh.emo)}</span>` : ''}<span>${esc(sh.name)}</span></div>`;
+    if (sh.type === 'list') {
+      const pic = sh.img ? `<div class="thumbBox"><img src="${esc(sh.img)}" alt=""></div>`
+        : sh.videos.length ? `<img class="thumb" src="${thumb(sh.videos[0].id)}" alt="" loading="lazy">`
+        : `<div class="thumbBox"><span class="bigEmo">${esc(sh.emo || (sh.kind === 'channel' ? '📺' : '🎞️'))}</span></div>`;
+      const badge = sh.videos.length ? `📁 ${sh.videos.length}` : '▶ Plays all';
+      b.innerHTML = pic + `<span class="badge">${badge}</span>` + label;
+      b.onclick = () => sh.videos.length ? openFolder(sh) : play({ list: sh.listId, title: sh.name, emo: sh.emo });
+    } else {
+      b.innerHTML = `<img class="thumb" src="${thumb(sh.id)}" alt="" loading="lazy">` + label;
+      b.onclick = () => play({ id: sh.id, title: sh.name, emo: sh.emo });
+    }
+    return b;
+  }
   function render() {
     const g = $('grid'); g.innerHTML = '';
     $('empty').style.display = shows.length ? 'none' : 'block';
-    shows.forEach((sh, i) => {
+    shows.forEach((sh, i) => g.appendChild(tileFor(sh, i)));
+  }
+
+  // ---------- Channel folder ----------
+  let folderShow = null;
+  function drawFolder() {
+    const sh = folderShow; if (!sh) return;
+    $('fTitle').textContent = (sh.emo ? sh.emo + ' ' : '') + sh.name;
+    $('fImg').style.display = sh.img ? 'block' : 'none'; if (sh.img) $('fImg').src = sh.img;
+    const g = $('fGrid'); g.innerHTML = '';
+    sh.videos.forEach((v, i) => {
       const b = document.createElement('button');
-      b.className = 'tile'; b.style.setProperty('--c', sh.colour);
-      b.style.animationDelay = (i*0.05) + 's';
-      b.innerHTML = `<img class="thumb" src="${thumb(sh.id)}" alt="" loading="lazy">
-        <div class="label">${sh.emo ? `<span class="emo">${esc(sh.emo)}</span>` : ''}<span>${esc(sh.name)}</span></div>`;
-      b.onclick = () => play(sh);
+      b.className = 'tile'; b.style.setProperty('--c', sh.colour); b.style.animationDelay = Math.min(i, 20) * 0.03 + 's';
+      b.innerHTML = `<img class="thumb" src="${thumb(v.id)}" alt="" loading="lazy"><div class="vlabel">${esc(v.t)}</div>`;
+      b.onclick = () => play({ id: v.id, title: v.t, emo: sh.emo });
       g.appendChild(b);
     });
   }
-
-  // Player
-  function play(sh) {
-    const p = new URLSearchParams({ autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1, fs: 1 });
-    if (location.protocol.startsWith('http')) p.set('origin', location.origin);
-    $('frame').src = `https://www.youtube-nocookie.com/embed/${sh.id}?${p}`;
-    $('ytLink').href = `https://www.youtube.com/watch?v=${sh.id}`;
-    $('ptitle').textContent = (sh.emo ? sh.emo + ' ' : '') + sh.name;
-    $('player').classList.add('open');
+  function openFolder(sh) {
+    folderShow = sh; $('fNote').textContent = '';
+    drawFolder(); $('folder').classList.add('open'); $('folder').scrollTop = 0;
+    if (getKey() && Date.now() - (sh.updated || 0) > REFRESH_MS) {
+      $('fNote').textContent = 'Checking for new videos…';
+      refreshList(sh).then(() => { $('fNote').textContent = ''; if (folderShow === sh) drawFolder(); render(); })
+        .catch(() => { $('fNote').textContent = ''; });
+    }
   }
-  $('backBtn').onclick = () => { $('frame').src = 'about:blank'; $('player').classList.remove('open'); };
+  $('fBack').onclick = () => { folderShow = null; $('folder').classList.remove('open'); };
 
-  // Modals
+  // ---------- Player ----------
+  let apiReady = false, ytPlayer = null;
+  window.onYouTubeIframeAPIReady = () => { apiReady = true; };
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+
+  function resetStage() {
+    try { if (ytPlayer) ytPlayer.destroy(); } catch {}
+    ytPlayer = null;
+    const stage = document.querySelector('.stage');
+    stage.querySelectorAll('iframe').forEach(f => f.remove());
+    if (!$('frame')) { const d = document.createElement('div'); d.id = 'frame'; stage.prepend(d); }
+    $('unavail').classList.remove('show');
+  }
+  const showUnavailable = () => { resetStage(); $('unavail').classList.add('show'); };
+
+  function play({ id, list, title, emo }) {
+    resetStage();
+    $('ptitle').textContent = (emo ? emo + ' ' : '') + (title || '');
+    $('player').classList.add('open');
+    const vars = { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1, fs: 1 };
+    if (list) { vars.listType = 'playlist'; vars.list = list; }
+    if (location.protocol.startsWith('http')) vars.origin = location.origin;
+    if (apiReady && window.YT && YT.Player) {
+      ytPlayer = new YT.Player('frame', {
+        host: 'https://www.youtube-nocookie.com', ...(id && { videoId: id }), playerVars: vars,
+        events: {
+          onReady: e => { try { e.target.playVideo(); } catch {} },
+          onError: showUnavailable
+        }
+      });
+      const f = ytPlayer.getIframe && ytPlayer.getIframe();
+      if (f) { f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen'); f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); }
+    } else {
+      const f = document.createElement('iframe');
+      f.src = `https://www.youtube-nocookie.com/embed/${id || 'videoseries'}?${new URLSearchParams(vars)}`;
+      f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true;
+      f.referrerPolicy = 'strict-origin-when-cross-origin';
+      $('frame').replaceWith(f);
+    }
+  }
+  const closePlayer = () => { resetStage(); $('player').classList.remove('open'); };
+  $('backBtn').onclick = closePlayer;
+  $('pickBtn').onclick = closePlayer;
+
+  // ---------- Modals + lock ----------
   const open = id => $(id).classList.add('open');
   const close = id => $(id).classList.remove('open');
   document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => close(b.dataset.close));
 
-  // Grown-up lock: a times-table sum
   let answer = 0;
   $('parentBtn').onclick = () => {
     const a = 6 + Math.floor(Math.random()*7), b = 6 + Math.floor(Math.random()*7);
@@ -252,18 +514,22 @@
   $('lockGo').onclick = tryUnlock;
   $('sumA').onkeydown = e => { if (e.key === 'Enter') tryUnlock(); };
 
-  // Parent panel
-  let colour = COLOURS[0];
-  function drawSwatches() {
-    $('swatches').innerHTML = '';
+  // ---------- Parent panel ----------
+  let colour = COLOURS[0], editing = -1;
+  function swatchesInto(el, current, onPick) {
+    el.innerHTML = '';
     COLOURS.forEach(c => {
       const d = document.createElement('div');
-      d.className = 'sw' + (c === colour ? ' sel' : ''); d.style.background = c;
-      d.onclick = () => { colour = c; drawSwatches(); };
-      $('swatches').appendChild(d);
+      d.className = 'sw' + (c === current ? ' sel' : ''); d.style.background = c;
+      d.onclick = () => onPick(c);
+      el.appendChild(d);
     });
   }
-  let editing = -1;
+  const drawSwatches = () => swatchesInto($('swatches'), colour, c => { colour = c; drawSwatches(); });
+
+  const setMsg = (el, text, kind) => { el.className = 'msg' + (kind ? ' ' + kind : ''); el.textContent = text; };
+  const errText = e => e.message === 'NO_KEY' ? 'This needs an API key — see the 🔑 section.' : e.message;
+
   function drawList() {
     const l = $('list'); l.innerHTML = '';
     $('count').textContent = shows.length ? `(${shows.length})` : '';
@@ -271,13 +537,25 @@
       const r = document.createElement('div');
       if (i === editing) { r.appendChild(editor(sh, i)); l.appendChild(r); return; }
       r.className = 'li';
-      r.innerHTML = `<img src="${thumb(sh.id)}" alt=""><div class="t">${esc(sh.emo||'')} ${esc(sh.name)}</div>
+      const isList = sh.type === 'list';
+      const pic = !isList ? `<img src="${thumb(sh.id)}" alt="">`
+        : sh.img ? `<img class="round" src="${esc(sh.img)}" alt="">`
+        : sh.videos.length ? `<img src="${thumb(sh.videos[0].id)}" alt="">`
+        : `<div class="ph">${sh.kind === 'channel' ? '📺' : '🎞️'}</div>`;
+      const sub = !isList ? '' : `<span class="sub">${sh.kind === 'channel' ? 'Channel' : 'Playlist'} · ${sh.videos.length ? sh.videos.length + ' videos' : 'plays all'}</span>`;
+      r.innerHTML = `${pic}<div class="t">${esc(sh.emo||'')} ${esc(sh.name)}${sub}</div>
         <button class="mv" title="Move up">⬆️</button><button class="mv" title="Move down">⬇️</button>
+        ${isList && getKey() ? '<button class="mv" title="Check for new videos">🔄</button>' : ''}
         <button class="mv" title="Edit">✏️</button><button class="btn del">Remove</button>`;
-      const [up, down, ed, del] = r.querySelectorAll('button');
+      const btns = [...r.querySelectorAll('button')];
+      const [up, down] = btns, del = btns.at(-1), ed = btns.at(-2), ref = btns.length === 5 ? btns[2] : null;
       up.onclick = () => { if (i > 0) { [shows[i-1], shows[i]] = [shows[i], shows[i-1]]; commit(); } };
       down.onclick = () => { if (i < shows.length-1) { [shows[i+1], shows[i]] = [shows[i], shows[i+1]]; commit(); } };
       ed.onclick = () => { editing = i; drawList(); };
+      if (ref) ref.onclick = async () => {
+        ref.textContent = '⏳'; ref.disabled = true;
+        try { await refreshList(sh); commit(); } catch (e) { ref.textContent = '⚠️'; ref.title = errText(e); ref.disabled = false; }
+      };
       del.onclick = () => {
         if (del.dataset.sure) { shows.splice(i, 1); editing = -1; commit(); }
         else { del.dataset.sure = 1; del.textContent = 'Sure?'; setTimeout(() => { delete del.dataset.sure; del.textContent = 'Remove'; }, 3000); }
@@ -300,90 +578,108 @@
     const box = document.createElement('div');
     box.style.cssText = 'background:#f4f1fc;border-radius:12px;padding:10px;margin:8px 0';
     let c = sh.colour;
-    box.innerHTML = `<label>YouTube link</label><input class="eu" value="https://www.youtube.com/watch?v=${esc(sh.id)}">
-      <label>Name</label><input class="en" value="${esc(sh.name)}">
+    const isList = sh.type === 'list';
+    box.innerHTML = (isList ? `<p class="note" style="margin:0">${sh.kind === 'channel' ? 'Channel' : 'Playlist'} — to change the link, remove it and add the new one.</p>`
+        : `<label>YouTube link</label><input class="eu" value="https://www.youtube.com/watch?v=${esc(sh.id)}">`) +
+      `<label>Name</label><input class="en" value="${esc(sh.name)}">
       <label>Emoji</label><input class="ee" maxlength="4" value="${esc(sh.emo||'')}">
       <label>Colour</label><div class="swatches"></div>
       <div class="msg err"></div>
       <div class="row"><button class="btn">💾 Save</button><button class="btn alt">Cancel</button></div>`;
     const sw = box.querySelector('.swatches');
-    const drawSw = () => { sw.innerHTML = ''; COLOURS.forEach(col => {
-      const d = document.createElement('div'); d.className = 'sw' + (col === c ? ' sel' : ''); d.style.background = col;
-      d.onclick = () => { c = col; drawSw(); }; sw.appendChild(d); }); };
+    const drawSw = () => swatchesInto(sw, c, col => { c = col; drawSw(); });
     drawSw();
-    const [save, cancel] = box.querySelectorAll('.row button');
-    save.onclick = () => {
-      const id = parseId(box.querySelector('.eu').value);
-      if (!id) { box.querySelector('.msg').textContent = "That doesn't look like a YouTube video link."; return; }
-      shows[i] = { id, name: box.querySelector('.en').value.trim() || 'Show', emo: box.querySelector('.ee').value.trim(), colour: c };
+    const [saveB, cancel] = box.querySelectorAll('.row button');
+    saveB.onclick = () => {
+      const upd = { name: box.querySelector('.en').value.trim() || sh.name, emo: box.querySelector('.ee').value.trim(), colour: c };
+      if (!isList) {
+        const p = parseInput(box.querySelector('.eu').value);
+        if (!p || p.kind !== 'video') { box.querySelector('.msg').textContent = "That doesn't look like a YouTube video link."; return; }
+        upd.id = p.id;
+      }
+      shows[i] = { ...sh, ...upd };
       editing = -1; commit();
     };
     cancel.onclick = () => { editing = -1; drawList(); };
     return box;
   }
 
-  async function fetchTitle(id) {
-    try {
-      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 5000);
-      const r = await fetch(`https://noembed.com/embed?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + id)}`, { signal: ctl.signal });
-      clearTimeout(t);
-      const j = await r.json();
-      return j.title ? j.title.slice(0, 40) : null;
-    } catch { return null; }
+  function commit() { save(); render(); drawList(); }
+  function openPanel() {
+    editing = -1; drawSwatches(); drawList(); setMsg($('addMsg'), '');
+    $('apiKey').value = getKey(); setMsg($('keyMsg'), getKey() ? 'Key saved ✓' : '', getKey() ? 'ok' : '');
+    open('panel');
   }
+
+  $('addBtn').onclick = async () => {
+    const msg = $('addMsg'), btn = $('addBtn');
+    const p = parseInput($('url').value);
+    if (p && shows.some(s => itemKey(s) === (p.id || (p.by === 'id' ? 'UU' + p.value.slice(2) : '')))) { setMsg(msg, "That's already on the list.", 'err'); return; }
+    btn.disabled = true; setMsg(msg, p && p.kind !== 'video' && getKey() ? 'Fetching videos…' : 'Adding…');
+    try {
+      const item = await buildItem($('url').value, $('name').value.trim(), $('emo').value.trim(), colour);
+      if (shows.some(s => itemKey(s) === itemKey(item))) throw new Error("That's already on the list.");
+      shows.push(item);
+      colour = COLOURS[shows.length % COLOURS.length];
+      $('url').value = $('name').value = $('emo').value = '';
+      setMsg(msg, `Added “${item.name}”${item.type === 'list' && item.videos.length ? ` with ${item.videos.length} videos` : ''}!`, 'ok');
+      drawSwatches(); commit();
+    } catch (e) { setMsg(msg, errText(e), 'err'); }
+    btn.disabled = false;
+  };
 
   $('bulkBtn').onclick = async () => {
     const msg = $('bulkMsg'), btn = $('bulkBtn');
     const lines = $('bulk').value.split('\n').map(s => s.trim()).filter(Boolean);
-    if (!lines.length) { msg.className = 'msg err'; msg.textContent = 'Paste some links first.'; return; }
-    btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Adding…';
-    let added = 0, bad = [], dup = 0;
-    for (const line of lines) {
+    if (!lines.length) { setMsg(msg, 'Paste some links first.', 'err'); return; }
+    btn.disabled = true;
+    let added = 0, dup = 0; const failed = [], reasons = new Set();
+    for (const [n, line] of lines.entries()) {
+      setMsg(msg, `Adding ${n + 1} of ${lines.length}…`);
       const parts = line.split('|');
       const link = parts.pop().trim(), given = parts.join('|').trim();
-      const id = parseId(link);
-      if (!id) { bad.push(line); continue; }
-      if (shows.some(s => s.id === id)) { dup++; continue; }
-      const name = given || await fetchTitle(id) || `Show ${shows.length + 1}`;
-      shows.push({ id, name, emo: '', colour: COLOURS[shows.length % COLOURS.length] });
-      added++; commit();
+      try {
+        const item = await buildItem(link, given, '', COLOURS[shows.length % COLOURS.length]);
+        if (shows.some(s => itemKey(s) === itemKey(item))) { dup++; continue; }
+        shows.push(item); added++; commit();
+      } catch (e) { failed.push(line); reasons.add(errText(e)); }
     }
     btn.disabled = false;
-    $('bulk').value = bad.join('\n');
-    msg.className = bad.length ? 'msg err' : 'msg ok';
-    msg.textContent = `Added ${added}.` + (dup ? ` Skipped ${dup} already on the list.` : '') +
-      (bad.length ? ` ${bad.length} line(s) weren't YouTube links — left in the box.` : '');
-  };
-  function commit() { save(); render(); drawList(); }
-  function openPanel() { editing = -1; drawSwatches(); drawList(); $('addMsg').textContent = ''; open('panel'); }
-
-  $('addBtn').onclick = () => {
-    const id = parseId($('url').value), msg = $('addMsg');
-    if (!id) { msg.className = 'msg err'; msg.textContent = "That doesn't look like a YouTube video link."; return; }
-    const name = $('name').value.trim() || 'New show';
-    shows.push({ id, name, emo: $('emo').value.trim(), colour });
-    colour = COLOURS[shows.length % COLOURS.length];
-    $('url').value = $('name').value = $('emo').value = '';
-    msg.className = 'msg ok'; msg.textContent = `Added “${name}”!`;
-    drawSwatches(); commit();
+    $('bulk').value = failed.join('\n');
+    setMsg(msg, `Added ${added}.` + (dup ? ` Skipped ${dup} already on the list.` : '') +
+      (failed.length ? ` ${failed.length} couldn't be added (left in the box): ${[...reasons].join(' ')}` : ''), failed.length ? 'err' : 'ok');
   };
 
+  // API key
+  $('keySave').onclick = async () => {
+    const k = $('apiKey').value.trim(), msg = $('keyMsg');
+    if (!k) { setMsg(msg, 'Paste a key first.', 'err'); return; }
+    const old = getKey(); setKey(k); setMsg(msg, 'Testing…');
+    try { await api('channels', { part: 'id', forHandle: '@YouTube' }); setMsg(msg, 'Key works ✓', 'ok'); drawList(); }
+    catch (e) { setKey(old); setMsg(msg, errText(e), 'err'); }
+  };
+  $('keyClear').onclick = () => { setKey(''); $('apiKey').value = ''; setMsg($('keyMsg'), 'Key removed.'); drawList(); };
+
+  // Backup
   $('copyBtn').onclick = async () => {
-    try { await navigator.clipboard.writeText($('backup').value); $('bkMsg').className='msg ok'; $('bkMsg').textContent='Copied!'; }
-    catch { $('backup').select(); $('bkMsg').className='msg'; $('bkMsg').textContent='Selected — copy it manually.'; }
+    try { await navigator.clipboard.writeText($('backup').value); setMsg($('bkMsg'), 'Copied!', 'ok'); }
+    catch { $('backup').select(); setMsg($('bkMsg'), 'Selected — copy it manually.'); }
   };
   $('loadBtn').onclick = () => {
     try {
       const data = JSON.parse($('backup').value);
       if (!Array.isArray(data)) throw 0;
-      shows = data.filter(s => s && /^[\w-]{11}$/.test(s.id)).map(s => ({
-        id: s.id, name: String(s.name || 'Show'), emo: String(s.emo || ''), colour: COLOURS.includes(s.colour) ? s.colour : COLOURS[0]
-      }));
-      commit(); $('bkMsg').className='msg ok'; $('bkMsg').textContent=`Loaded ${shows.length} shows.`;
-    } catch { $('bkMsg').className='msg err'; $('bkMsg').textContent="Couldn't read that backup."; }
+      shows = data.map(s => clean(s.type ? s : { ...s, type: 'video' })).filter(Boolean);
+      commit(); setMsg($('bkMsg'), `Loaded ${shows.length} shows.`, 'ok');
+    } catch { setMsg($('bkMsg'), "Couldn't read that backup.", 'err'); }
   };
 
-  load(); render();
+  // Older saved shows had no "type"
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY)) || [];
+    shows = raw.map(s => clean(s && !s.type ? { ...s, type: 'video' } : s)).filter(Boolean);
+  } catch { shows = []; }
+  save(); render();
 })();
 </script>
 </body>
